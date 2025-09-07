@@ -27,7 +27,7 @@ def main():
         frame_path = os.path.join(output_dir, f"frame_{i:03}.png")
 
         # Create a blank image (1280x720 black background)
-        img = Image.new('RGB', (1280, 720), color=(0, 0, 0))
+        img = Image.new("RGB", (640, 480), color=(30, 30, 30))
         draw = ImageDraw.Draw(img)
 
         # Use a visible font
