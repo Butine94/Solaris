@@ -1,20 +1,9 @@
 import os
-from moviepy.editor import ImageSequenceClip
+from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 
-def frames_to_video(frames_dir, output_path, fps=24):
-
-    if not os.path.exists(frames_dir):
-        raise FileNotFoundError(f"Frames directory not found: {frames_dir}")
-
-    frames = sorted([
-        os.path.join(frames_dir, f)
-        for f in os.listdir(frames_dir)
-        if f.lower().endswith((".png", ".jpg"))
-    ])
-
-    if not frames:
-        raise ValueError("No image frames found in the folder.")
-
-    clip = ImageSequenceClip(frames, fps=fps)
+def create_video_from_frames(frame_paths, output_path, fps=24):
+    
+    clip = ImageSequenceClip(frame_paths, fps=fps)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     clip.write_videofile(output_path, codec="libx264")
     print(f"Video saved to {output_path}")

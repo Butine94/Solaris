@@ -1,6 +1,6 @@
 import os
 
-def read_script(script_path):
+def load_script_lines(script_path):
 
     if not os.path.exists(script_path):
         raise FileNotFoundError(f"Script file not found: {script_path}")

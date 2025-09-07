@@ -3,7 +3,7 @@ from diffusers import StableDiffusionPipeline
 import os
 
 class DiffusionGenerator:
-
+    
     def __init__(self, model_name="runwayml/stable-diffusion-v1-5", device="cuda"):
         self.device = device if torch.cuda.is_available() else "cpu"
         self.pipe = StableDiffusionPipeline.from_pretrained(model_name).to(self.device)
