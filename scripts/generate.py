@@ -1,57 +1,69 @@
 import os
 import sys
-from pathlib import Path
-import textwrap
-
-# Ensure utils can be imported
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.text import read_script
 from utils.video import create_video_from_frames
 from PIL import Image, ImageDraw, ImageFont
 
+# -----------------------------
+# Configuration
+# -----------------------------
+SCRIPT_PATH = "data/sample_scripts.txt"
+OUTPUT_DIR = "outputs"
+VIDEO_PATH = os.path.join(OUTPUT_DIR, "film_ai_output.mp4")
+FRAME_SIZE = (640, 480)
+FPS = 1  # frames per second
+BACKGROUND_COLOR = (30, 30, 30)  # dark gray
+TEXT_COLOR = (255, 255, 255)  # white
 
-def main():
-    # Paths
-    script_path = "data/sample_scripts.txt"
-    output_dir = "outputs"
-    os.makedirs(output_dir, exist_ok=True)
+# -----------------------------
+# Ensure output directory exists
+# -----------------------------
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Read the script
-    script_lines = read_script(script_path)
-    print(f"Read {len(script_lines)} script lines.")
+# -----------------------------
+# Read script lines
+# -----------------------------
+lines = read_script(SCRIPT_PATH)
 
-    # Generate image frames from script lines
-    frame_paths = []
-    for i, line in enumerate(script_lines):
-        frame_path = os.path.join(output_dir, f"frame_{i:03}.png")
+# -----------------------------
+# Load font
+# -----------------------------
+try:
+    font = ImageFont.truetype("arial.ttf", size=32)
+except OSError:
+    font = ImageFont.load_default()  # fallback if Arial is unavailable
 
-        # Create a blank image (1280x720 black background)
-        img = Image.new("RGB", (640, 480), color=(30, 30, 30))
-        draw = ImageDraw.Draw(img)
+# -----------------------------
+# Generate frames
+# -----------------------------
+frame_paths = []
 
-        # Use a visible font
-        try:
-            font = ImageFont.truetype("arial.ttf", 36)
-        except OSError:
-            font = ImageFont.load_default()
+for idx, line in enumerate(lines):
+    # Create new image for each frame
+    img = Image.new("RGB", FRAME_SIZE, color=BACKGROUND_COLOR)
+    draw = ImageDraw.Draw(img)
 
-        # Wrap text so it fits nicely on the image
-        wrapped_text = textwrap.fill(line, width=60)
+    # Center the text
+    bbox = draw.textbbox((0, 0), line, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+    text_x = (FRAME_SIZE[0] - text_w) / 2
+    text_y = (FRAME_SIZE[1] - text_h) / 2
+    draw.text((text_x, text_y), line, fill=TEXT_COLOR, font=font)
 
-        # Draw text
-        draw.text((50, 50), wrapped_text, font=font, fill=(255, 255, 255))
+    # Save frame image
+    frame_path = os.path.join(OUTPUT_DIR, f"frame_{idx:03d}.png")
+    img.save(frame_path)
+    frame_paths.append(frame_path)
 
-        # Save frame
-        img.save(frame_path)
-        frame_paths.append(frame_path)
-        print(f"Created frame: {frame_path}")
+# -----------------------------
+# Create video from frames
+# -----------------------------
+create_video_from_frames(frame_paths, VIDEO_PATH)
 
-    # Assemble frames into video
-    video_path = os.path.join(output_dir, "film_ai_output.mp4")
-    create_video_from_frames(frame_paths, video_path)
-    print("Video generation complete!")
+print(f"Video saved to {VIDEO_PATH}")
 
 
-if __name__ == "__main__":
-    main()
+
