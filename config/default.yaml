@@ -1,6 +1,5 @@
-
-backend: "auto" 
-
+cat > config.yaml << 'EOF'
+backend: "auto"
 # Diffusion model settings
 diffusion:
   base_model: "runwayml/stable-diffusion-v1-5"
@@ -10,7 +9,6 @@ diffusion:
   width: 512
   seed: 42
   dtype: "fp16"
-
 # Generation settings
 generation:
   fps: 24
@@ -18,7 +16,7 @@ generation:
   frames_dir: "outputs/frames"
   output_video: "outputs/sample_output.mp4"
   num_scenes: 5
-
 # Data paths
 data:
   scripts_file: "data/sample_scripts.txt"
+EOF
