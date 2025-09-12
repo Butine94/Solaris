@@ -1,77 +1,95 @@
-import os
-from typing import List, Dict
-from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
-import numpy as np
+"""Fast video assembly utilities"""
 
-class VideoAssembler:
-    """Assembles images into cinematic video"""
+import os
+from PIL import Image
+
+def create_dirs(config):
+    """Create output directories"""
+    dirs = [
+        config.get('output_dir', 'outputs'),
+        config.get('frames_dir', 'outputs/frames'),
+        'data'
+    ]
     
-    def __init__(self, fps: int = 24):
-        self.fps = fps
-    
-    def create_video(self, shots: List[Dict], output_path: str, shot_duration: float = 3.0):
-        """Create video from shot images"""
-        clips = []
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+    print(f"✅ Created directories: {', '.join(dirs)}")
+
+def make_video_fast(image_paths, output_path, duration=3.0):
+    """Quick video creation (optional - requires moviepy)"""
+    try:
+        from moviepy.editor import ImageClip, concatenate_videoclips
         
-        for shot in shots:
-            image_path = shot.get('image_path')
-            if image_path and os.path.exists(image_path):
-                # Create image clip with duration
-                clip = ImageClip(image_path).set_duration(shot_duration)
-                
-                # Add cinematic effects
-                clip = self._add_cinematic_effects(clip, shot['type'])
+        clips = []
+        for img_path in image_paths:
+            if os.path.exists(img_path):
+                clip = ImageClip(img_path).set_duration(duration)
                 clips.append(clip)
         
         if clips:
-            # Concatenate all clips
-            final_video = concatenate_videoclips(clips, method="compose")
-            
-            # Write video file
-            final_video.write_videofile(
-                output_path,
-                fps=self.fps,
-                codec='libx264',
-                audio_codec='aac' if self._has_audio(shots) else None,
-                temp_audiofile='temp-audio.m4a',
-                remove_temp=True
-            )
-            
+            video = concatenate_videoclips(clips, method="compose")
+            video.write_videofile(output_path, fps=24, verbose=False, logger=None)
+            print(f"🎬 Video saved: {output_path}")
             return output_path
-        return None
-    
-    def _add_cinematic_effects(self, clip, shot_type: str):
-        """Add cinematic effects based on shot type"""
-        # Subtle zoom effect for establishing shots
-        if shot_type == 'establishing':
-            clip = clip.resize(lambda t: 1 + 0.02 * t)  # Slow zoom
         
-        # Fade effects
-        clip = clip.fadein(0.5).fadeout(0.5)
-        
-        return clip
+    except ImportError:
+        print("⚠️ MoviePy not installed. Skipping video creation.")
+        print("   Install with: pip install moviepy")
+    except Exception as e:
+        print(f"⚠️ Video creation failed: {e}")
     
-    def _has_audio(self, shots: List[Dict]) -> bool:
-        """Check if any shots have audio"""
-        return any(shot.get('audio_path') for shot in shots)
+    return None
 
-def create_output_dirs(config: Dict):
-    """Create necessary output directories"""
-    os.makedirs(config['generation']['output_dir'], exist_ok=True)
-    os.makedirs(config['generation']['frames_dir'], exist_ok=True)
-    os.makedirs('data', exist_ok=True)
-    print(f"✓ Created output directories: {config['generation']['output_dir']}, {config['generation']['frames_dir']}")
+def display_images(image_paths):
+    """Quick image display"""
+    try:
+        import matplotlib.pyplot as plt
+        
+        valid_paths = [p for p in image_paths if os.path.exists(p)]
+        if not valid_paths:
+            print("❌ No images found to display")
+            return
+        
+        num_imgs = len(valid_paths)
+        fig, axes = plt.subplots(1, num_imgs, figsize=(4*num_imgs, 4))
+        
+        if num_imgs == 1:
+            axes = [axes]
+        
+        for i, img_path in enumerate(valid_paths):
+            img = Image.open(img_path)
+            axes[i].imshow(img)
+            axes[i].set_title(f"Shot {i+1}")
+            axes[i].axis('off')
+        
+        plt.tight_layout()
+        plt.show()
+        print(f"🖼️ Displayed {num_imgs} images")
+        
+    except ImportError:
+        print("⚠️ Matplotlib not available for display")
 
-def get_image_paths(frames_dir: str, num_shots: int) -> List[str]:
-    """Get expected image paths for shots"""
+def get_image_paths(frames_dir, num_shots=3):
+    """Get expected image paths"""
     return [os.path.join(frames_dir, f"shot_{i+1}.png") for i in range(num_shots)]
 
-def validate_images(image_paths: List[str]) -> List[str]:
-    """Validate that image files exist"""
-    valid_paths = []
+def validate_images(image_paths):
+    """Check which images exist"""
+    valid = []
     for path in image_paths:
         if os.path.exists(path):
-            valid_paths.append(path)
+            valid.append(path)
         else:
-            print(f"Warning: Image not found at {path}")
-    return valid_paths
+            print(f"⚠️ Missing: {path}")
+    
+    print(f"✅ Found {len(valid)}/{len(image_paths)} images")
+    return valid
+
+# Quick test
+if __name__ == "__main__":
+    config = {'output_dir': 'test_outputs', 'frames_dir': 'test_outputs/frames'}
+    create_dirs(config)
+    
+    # Test paths
+    paths = get_image_paths('test_outputs/frames', 3)
+    print("Expected paths:", paths)

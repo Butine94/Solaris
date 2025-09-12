@@ -1,186 +1,64 @@
 #!/usr/bin/env python3
-"""
-Fine-tuning script for custom cinematic style
-"""
+"""Simple training/fine-tuning script"""
 
-import sys
-import os
-import yaml
 import torch
-from pathlib import Path
-from diffusers import StableDiffusionPipeline, UNet2DConditionModel
-from transformers import CLIPTextModel, CLIPTokenizer
+import yaml
 
-# Add parent directory to path
-sys.path.append(str(Path(__file__).parent.parent))
+def setup_training():
+    """Setup for potential fine-tuning"""
+    print("🔧 Training Setup")
+    
+    # Load config
+    with open('config.yaml') as f:
+        config = yaml.safe_load(f)
+    
+    print(f"Model: {config['model']}")
+    print(f"Device: {'GPU' if torch.cuda.is_available() else 'CPU'}")
+    
+    # Training prompts for cinematic style
+    training_prompts = [
+        "cinematic establishing shot, dramatic lighting",
+        "professional cinematography, film grain",
+        "atmospheric mood, shallow depth of field",
+        "anamorphic lens, golden hour lighting",
+        "noir style, high contrast shadows"
+    ]
+    
+    print(f"✅ {len(training_prompts)} training prompts ready")
+    
+    # Optimization tips
+    tips = [
+        "Use LoRA for efficient fine-tuning",
+        "Enable gradient checkpointing for memory",
+        "Use mixed precision (fp16) for speed", 
+        "Batch size 1-2 for consumer GPUs",
+        "Learning rate: 1e-5 to 5e-5"
+    ]
+    
+    print("\n💡 Training Tips:")
+    for tip in tips:
+        print(f"   • {tip}")
+    
+    return training_prompts
 
-def load_config(config_path: str = "config.yaml") -> dict:
-    """Load configuration from YAML file"""
-    with open(config_path, 'r') as f:
-        return yaml.safe_load(f)
-
-class CinematicStyleTrainer:
-    """Fine-tune diffusion model for cinematic style"""
+def simulate_training():
+    """Simulate training process"""
+    print("\n🎯 Simulating Training...")
     
-    def __init__(self, config: dict):
-        self.config = config
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-    def setup_training(self):
-        """Setup training pipeline"""
-        print("🔧 Setting up training pipeline...")
-        
-        # Load base model components
-        self.tokenizer = CLIPTokenizer.from_pretrained(
-            self.config['diffusion']['base_model'],
-            subfolder="tokenizer"
-        )
-        
-        self.text_encoder = CLIPTextModel.from_pretrained(
-            self.config['diffusion']['base_model'],
-            subfolder="text_encoder"
-        )
-        
-        self.unet = UNet2DConditionModel.from_pretrained(
-            self.config['diffusion']['base_model'],
-            subfolder="unet"
-        )
-        
-        print("✓ Training components loaded")
+    # Mock training loop
+    epochs = 5
+    for epoch in range(epochs):
+        print(f"   Epoch {epoch+1}/{epochs} - Loss: {0.5 - epoch*0.08:.3f}")
     
-    def create_training_data(self):
-        """Create training data for cinematic style"""
-        print("📚 Creating cinematic training prompts...")
-        
-        # Cinematic style training prompts
-        training_prompts = [
-            "cinematic establishing shot, dramatic lighting, film grain",
-            "close-up portrait, professional cinematography, shallow depth of field",
-            "wide angle landscape, golden hour lighting, anamorphic lens",
-            "medium shot, atmospheric fog, moody lighting",
-            "extreme close-up detail, macro photography, cinematic color grading",
-            "overhead shot, symmetrical composition, dramatic shadows",
-            "low angle shot, heroic perspective, dynamic lighting",
-            "silhouette against sunset, backlit, cinematic composition",
-            "noir style lighting, high contrast, dramatic shadows",
-            "sci-fi atmosphere, futuristic lighting, metallic surfaces"
-        ]
-        
-        # Style consistency keywords
-        style_keywords = [
-            "professional cinematography",
-            "film grain texture",
-            "dramatic lighting",
-            "cinematic color grading",
-            "shallow depth of field",
-            "anamorphic bokeh",
-            "atmospheric mood",
-            "high production value"
-        ]
-        
-        return training_prompts, style_keywords
-    
-    def train_lora_adapter(self, training_prompts: list, epochs: int = 100):
-        """Train LoRA adapter for style consistency"""
-        print(f"🎯 Training LoRA adapter for {epochs} epochs...")
-        
-        try:
-            from peft import LoraConfig, get_peft_model, TaskType
-            
-            # LoRA configuration
-            lora_config = LoraConfig(
-                task_type=TaskType.DIFFUSION,
-                r=16,  # Low rank
-                lora_alpha=32,
-                target_modules=["to_k", "to_q", "to_v", "to_out.0"],
-                lora_dropout=0.1,
-            )
-            
-            # Apply LoRA to UNet
-            self.unet = get_peft_model(self.unet, lora_config)
-            
-            print("✓ LoRA adapter configured")
-            
-            # Simulate training process (placeholder)
-            print("🔄 Training in progress...")
-            for epoch in range(min(epochs, 10)):  # Limit for demo
-                print(f"   Epoch {epoch+1}/{min(epochs, 10)}")
-                # Training logic would go here
-            
-            # Save LoRA weights
-            output_dir = "models/lora_cinematic"
-            os.makedirs(output_dir, exist_ok=True)
-            self.unet.save_pretrained(output_dir)
-            
-            print(f"✓ LoRA adapter saved to {output_dir}")
-            
-        except ImportError:
-            print("⚠️  PEFT library not available. Skipping LoRA training.")
-            print("   Install with: pip install peft")
-    
-    def optimize_inference(self):
-        """Optimize model for faster inference"""
-        print("⚡ Optimizing for inference speed...")
-        
-        optimization_tips = [
-            "✓ Using DPM++ scheduler for fewer steps",
-            "✓ Enabling attention slicing for memory efficiency",
-            "✓ Using FP16 precision for speed",
-            "✓ Reduced inference steps (20 instead of 50)",
-            "✓ Optimized prompt engineering for consistency"
-        ]
-        
-        for tip in optimization_tips:
-            print(f"   {tip}")
-    
-    def validate_style(self):
-        """Validate cinematic style consistency"""
-        print("🎨 Validating cinematic style consistency...")
-        
-        validation_metrics = {
-            "Style Consistency": "95%",
-            "Generation Speed": "2.3s per image",
-            "Memory Usage": "6.2 GB",
-            "Quality Score": "8.7/10"
-        }
-        
-        for metric, value in validation_metrics.items():
-            print(f"   {metric}: {value}")
-
-def main():
-    """Main training pipeline"""
-    print("🎬 Cinematic Style Training Pipeline")
-    print("=" * 50)
-    
-    # Load configuration
-    config_file = sys.argv[1] if len(sys.argv) > 1 else "default.yaml"
-    config = load_config(config_file)
-    
-    # Initialize trainer
-    trainer = CinematicStyleTrainer(config)
-    
-    # Setup training
-    trainer.setup_training()
-    
-    # Create training data
-    training_prompts, style_keywords = trainer.create_training_data()
-    print(f"✓ Created {len(training_prompts)} training prompts")
-    
-    # Train LoRA adapter
-    trainer.train_lora_adapter(training_prompts)
-    
-    # Optimize for inference
-    trainer.optimize_inference()
-    
-    # Validate results
-    trainer.validate_style()
-    
-    print("\n🎉 Training pipeline complete!")
-    print("💡 Tips for best results:")
-    print("   - Use consistent lighting keywords")
-    print("   - Include 'cinematic' in all prompts")
-    print("   - Set inference steps to 20-30 for speed")
-    print("   - Use seed=42 for reproducible results")
+    print("✅ Training complete!")
+    print("💾 Model saved to: models/fine_tuned/")
 
 if __name__ == "__main__":
-    main()
+    training_prompts = setup_training()
+    
+    # Ask user if they want to run training simulation
+    response = input("\nRun training simulation? (y/n): ").lower()
+    if response == 'y':
+        simulate_training()
+    else:
+        print("Training setup complete. Use training_prompts for actual training.")

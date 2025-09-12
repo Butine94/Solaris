@@ -1,21 +1,7 @@
-backend: auto
-data:
-  scripts_file: data/sample_scripts.txt
-diffusion:
-  base_model: runwayml/stable-diffusion-v1-5
-  dtype: fp16
-  guidance_scale: 7.5
-  height: 512
-  num_inference_steps: 20
-  seed: 42
-  width: 768
-generation:
-  fps: 24
-  frames_dir: outputs/frames
-  num_scenes: 5
-  output_dir: outputs
-  output_video: outputs/cinematic_film.mp4
-  shot_duration: 3.0
-style:
-  base_prompt: cinematic, dramatic lighting, film grain, professional cinematography
-  negative_prompt: blurry, low quality, distorted, amateur
+# Speed-optimized config
+model: "runwayml/stable-diffusion-v1-5"
+steps: 8          # Reduced from 20
+guidance: 6.0     # Reduced from 7.5  
+size: [384, 512]  # Smaller than [512, 768]
+shots: 3          # Reduced from 5
+script: "script.txt"

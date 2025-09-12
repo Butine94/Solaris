@@ -1,32 +1,7 @@
-# Core AI/ML libraries
 torch>=2.0.0
-torchvision>=0.15.0
 diffusers>=0.21.0
 transformers>=4.30.0
 accelerate>=0.20.0
-
-# Image processing
 Pillow>=9.5.0
-opencv-python>=4.8.0
-
-# Video processing
-moviepy>=1.0.3
-imageio>=2.31.0
-imageio-ffmpeg>=0.4.8
-
-# Configuration and utilities
 PyYAML>=6.0
-numpy>=1.24.0
-scipy>=1.10.0
-
-# Optional: Performance optimizations
-xformers>=0.0.20; sys_platform != "darwin"  # Skip on macOS
-peft>=0.4.0  # For LoRA fine-tuning
-
-# Optional: Audio processing (for future TTS integration)
-# elevenlabs>=0.2.0
-# pydub>=0.25.0
-
-# Development utilities
-tqdm>=4.65.0
-safetensors>=0.3.0
+matplotlib>=3.5.0
