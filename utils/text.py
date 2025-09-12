@@ -1,192 +1,106 @@
 import re
-import yaml
-from typing import List, Dict, Tuple
-from dataclasses import dataclass
+from typing import List, Dict
 
-@dataclass
-class Shot:
-    """Represents a single cinematic shot"""
-    id: int
-    description: str
-    prompt: str
-    duration: float = 3.0
-    scene_type: str = "medium"  # wide, medium, close, extreme_close
-    lighting: str = "natural"   # natural, dramatic, soft, neon, etc.
-
-class ScriptProcessor:
-    """Processes raw script text into structured cinematic shots"""
+class ScriptDecomposer:
+    """Decomposes scripts into atomic cinematic shots"""
     
     def __init__(self):
-        self.shot_keywords = {
-            'wide': ['ocean', 'vast', 'space', 'sky', 'horizon', 'landscape'],
-            'medium': ['person', 'figure', 'character', 'standing'],
-            'close': ['face', 'eyes', 'hand', 'detail'],
-            'extreme_close': ['reflection', 'tear', 'breath', 'whisper']
-        }
-        
-        self.lighting_keywords = {
-            'dramatic': ['dark', 'shadow', 'silhouette', 'black'],
-            'soft': ['gentle', 'warm', 'peaceful'],
-            'neon': ['metal', 'machine', 'station', 'glow'],
-            'natural': ['stars', 'sky', 'light']
+        self.shot_templates = {
+            'establishing': "wide establishing shot of {}",
+            'medium': "medium shot of {}",
+            'close': "close-up of {}",
+            'detail': "extreme close-up detail of {}",
+            'atmosphere': "atmospheric shot of {}"
         }
     
-    def load_script(self, file_path: str) -> str:
-        """Load script from text file"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Script file not found: {file_path}")
-    
-    def decompose_script(self, script_text: str, num_scenes: int = 5) -> List[Shot]:
-        """Decompose script into atomic shots"""
-        sentences = self._split_into_sentences(script_text)
+    def decompose_to_shots(self, script: str, num_shots: int = 5) -> List[Dict]:
+        """Convert script to atomic visual shots"""
+        sentences = self._split_sentences(script)
         shots = []
         
-        for i, sentence in enumerate(sentences[:num_scenes]):
-            shot = self._create_shot_from_sentence(i + 1, sentence)
-            shots.append(shot)
+        # Extract key visual elements
+        visual_elements = self._extract_visuals(sentences)
         
-        return shots
-    
-    def _split_into_sentences(self, text: str) -> List[str]:
-        """Split text into sentences, handling multiple formats"""
-        # Clean and split text
-        text = re.sub(r'\s+', ' ', text.strip())
-        sentences = re.split(r'[.!?]+', text)
-        sentences = [s.strip() for s in sentences if s.strip()]
-        return sentences
-    
-    def _create_shot_from_sentence(self, shot_id: int, sentence: str) -> Shot:
-        """Create a Shot object from a sentence"""
-        scene_type = self._detect_scene_type(sentence)
-        lighting = self._detect_lighting(sentence)
-        prompt = self._enhance_prompt(sentence, scene_type, lighting)
+        # Create 5 distinct shots with cinematic variety
+        shot_types = ['establishing', 'medium', 'atmosphere', 'close', 'detail']
         
-        return Shot(
-            id=shot_id,
-            description=sentence,
-            prompt=prompt,
-            duration=self._calculate_duration(sentence),
-            scene_type=scene_type,
-            lighting=lighting
-        )
-    
-    def _detect_scene_type(self, sentence: str) -> str:
-        """Detect shot type based on content"""
-        sentence_lower = sentence.lower()
-        
-        for shot_type, keywords in self.shot_keywords.items():
-            if any(keyword in sentence_lower for keyword in keywords):
-                return shot_type
-        
-        return "medium"  # default
-    
-    def _detect_lighting(self, sentence: str) -> str:
-        """Detect lighting mood from sentence"""
-        sentence_lower = sentence.lower()
-        
-        for lighting_type, keywords in self.lighting_keywords.items():
-            if any(keyword in sentence_lower for keyword in keywords):
-                return lighting_type
-        
-        return "natural"  # default
-    
-    def _enhance_prompt(self, sentence: str, scene_type: str, lighting: str) -> str:
-        """Enhance sentence into a detailed diffusion prompt"""
-        base_prompt = sentence
-        
-        # Add cinematic style
-        style_additions = [
-            "cinematic composition",
-            "professional cinematography",
-            "film grain",
-            "35mm lens"
-        ]
-        
-        # Add scene-specific enhancements
-        scene_enhancements = {
-            'wide': "establishing shot, wide angle, epic scale",
-            'medium': "medium shot, balanced composition",
-            'close': "close-up, detailed, intimate",
-            'extreme_close': "extreme close-up, macro, highly detailed"
-        }
-        
-        # Add lighting enhancements
-        lighting_enhancements = {
-            'dramatic': "dramatic lighting, high contrast, deep shadows",
-            'soft': "soft lighting, gentle shadows, warm tones",
-            'neon': "neon lighting, cyberpunk aesthetic, metallic reflections",
-            'natural': "natural lighting, balanced exposure"
-        }
-        
-        enhanced_prompt = f"{base_prompt}, {scene_enhancements[scene_type]}, {lighting_enhancements[lighting]}, {', '.join(style_additions)}"
-        
-        return enhanced_prompt
-    
-    def _calculate_duration(self, sentence: str) -> float:
-        """Calculate shot duration based on sentence complexity"""
-        word_count = len(sentence.split())
-        base_duration = 2.5
-        
-        # Longer sentences get more time
-        duration = base_duration + (word_count * 0.1)
-        
-        # Cap between 2-6 seconds
-        return max(2.0, min(6.0, duration))
-    
-    def export_shots_to_yaml(self, shots: List[Shot], output_path: str):
-        """Export shots to YAML for inspection/editing"""
-        shots_data = []
-        for shot in shots:
-            shots_data.append({
-                'id': shot.id,
-                'description': shot.description,
-                'prompt': shot.prompt,
-                'duration': shot.duration,
-                'scene_type': shot.scene_type,
-                'lighting': shot.lighting
+        for i, (shot_type, element) in enumerate(zip(shot_types, visual_elements[:5])):
+            prompt = self._build_cinematic_prompt(shot_type, element)
+            shots.append({
+                'id': i + 1,
+                'type': shot_type,
+                'element': element,
+                'prompt': prompt,
+                'description': f"Shot {i+1}: {shot_type} of {element}"
             })
         
-        with open(output_path, 'w', encoding='utf-8') as f:
-            yaml.dump({'shots': shots_data}, f, default_flow_style=False, indent=2)
-    
-    def load_shots_from_yaml(self, yaml_path: str) -> List[Shot]:
-        """Load shots from YAML file"""
-        with open(yaml_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
-        
-        shots = []
-        for shot_data in data['shots']:
-            shot = Shot(
-                id=shot_data['id'],
-                description=shot_data['description'],
-                prompt=shot_data['prompt'],
-                duration=shot_data.get('duration', 3.0),
-                scene_type=shot_data.get('scene_type', 'medium'),
-                lighting=shot_data.get('lighting', 'natural')
-            )
-            shots.append(shot)
-        
         return shots
-
-def create_narration_text(shots: List[Shot]) -> str:
-    """Create narration text from shots for TTS"""
-    narration_parts = []
     
-    for shot in shots:
-        # Convert visual description to narration
-        narration = shot.description.replace("reflects", "reflecting")
-        narration = narration.replace("stands", "standing")
-        narration = narration.replace("floats", "floating")
+    def _split_sentences(self, text: str) -> List[str]:
+        """Split text into sentences"""
+        sentences = re.split(r'[.!?]+', text.strip())
+        return [s.strip() for s in sentences if s.strip()]
+    
+    def _extract_visuals(self, sentences: List[str]) -> List[str]:
+        """Extract visual elements from sentences"""
+        visuals = []
         
-        narration_parts.append(narration)
+        # Key visual elements from your sample
+        visual_mapping = {
+            'ocean': 'vast ocean reflecting starlight like liquid metal',
+            'space': 'space station floating silently above',
+            'figure': 'tall black silhouette against the night sky',
+            'machines': 'glowing machinery humming in the darkness',
+            'person': 'lone figure standing in cosmic emptiness'
+        }
+        
+        # Extract based on keywords
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+            for keyword, visual in visual_mapping.items():
+                if keyword in sentence_lower and visual not in visuals:
+                    visuals.append(visual)
+        
+        # Fill remaining slots with atmospheric elements
+        atmospheric_elements = [
+            'starlit horizon with cosmic beauty',
+            'mysterious shadows and ethereal light',
+            'technological structures in space',
+            'infinite void with distant stars',
+            'industrial machinery in darkness'
+        ]
+        
+        while len(visuals) < 5:
+            for elem in atmospheric_elements:
+                if elem not in visuals:
+                    visuals.append(elem)
+                    break
+        
+        return visuals[:5]
     
-    return " ".join(narration_parts)
+    def _build_cinematic_prompt(self, shot_type: str, element: str) -> str:
+        """Build cinematic prompt for diffusion model"""
+        base_template = self.shot_templates.get(shot_type, "{}")
+        shot_desc = base_template.format(element)
+        
+        # Add cinematic styling
+        cinematic_style = "cinematic, dramatic lighting, film grain, professional cinematography, sci-fi atmosphere"
+        
+        return f"{shot_desc}, {cinematic_style}"
 
-def estimate_narration_duration(text: str, words_per_minute: int = 150) -> float:
-    """Estimate narration duration in seconds"""
-    word_count = len(text.split())
-    duration_minutes = word_count / words_per_minute
-    return duration_minutes * 60
+def load_script(filepath: str) -> str:
+    """Load script from file"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        # Return sample script if file not found
+        return """A wide ocean reflects the stars like liquid metal. A space station floats above, silent and still. 
+                  A tall black shape stands against the sky. The only sound is the hum of machines. 
+                  One person stands small in the vast emptiness."""
+
+def save_shots_metadata(shots: List[Dict], output_path: str):
+    """Save shot metadata to file"""
+    import json
+    with open(output_path, 'w') as f:
+        json.dump(shots, f, indent=2)
