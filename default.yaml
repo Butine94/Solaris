@@ -1,7 +1,30 @@
-# Speed-optimized config
-model: "runwayml/stable-diffusion-v1-5"
-steps: 8          # Reduced from 20
-guidance: 6.0     # Reduced from 7.5  
-size: [384, 512]  # Smaller than [512, 768]
-shots: 3          # Reduced from 5
-script: "script.txt"
+# AI Film Generation Configuration
+backend: "auto"
+
+# Diffusion model settings
+diffusion:
+  base_model: "runwayml/stable-diffusion-v1-5"
+  guidance_scale: 7.5
+  num_inference_steps: 10  # Reduced for CPU speed
+  height: 384              # Smaller for CPU
+  width: 512               # Smaller for CPU  
+  seed: 42
+  dtype: "fp32"            # Changed to fp32 for CPU compatibility
+
+# Generation settings
+generation:
+  fps: 24
+  output_dir: "outputs"
+  frames_dir: "outputs/frames"
+  output_video: "outputs/cinematic_film.mp4"
+  num_scenes: 3            # Reduced for speed
+  shot_duration: 3.0
+
+# Style consistency
+style:
+  base_prompt: "cinematic, dramatic lighting, film grain, professional cinematography"
+  negative_prompt: "blurry, low quality, distorted, amateur"
+
+# Data paths
+data:
+  scripts_file: "data/sample_scripts.txt"
